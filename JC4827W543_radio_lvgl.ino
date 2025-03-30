@@ -172,22 +172,58 @@ void setup()
     lv_label_set_text(btn_label, "Button");     /*Set the label's text*/
     lv_obj_center(btn_label);
 
-    // Arc Widget
-    lv_obj_t * label = lv_label_create(lv_screen_active());
+    createRollerWidget();
 
-    lv_obj_t *arc = lv_arc_create(lv_screen_active());
-    lv_obj_set_size(arc, 150, 150);
-    lv_arc_set_rotation(arc, 135);
-    lv_arc_set_bg_angles(arc, 0, 270);
-    lv_arc_set_value(arc, 10);
-    lv_obj_center(arc);
-    lv_obj_add_event_cb(arc, value_changed_event_cb, LV_EVENT_VALUE_CHANGED, label);
+    // // Arc Widget
+    // lv_obj_t * label = lv_label_create(lv_screen_active());
 
-    // Manually update the label for the first time
-    lv_obj_send_event(arc, LV_EVENT_VALUE_CHANGED, NULL);    
+    // lv_obj_t *arc = lv_arc_create(lv_screen_active());
+    // lv_obj_set_size(arc, 150, 150);
+    // lv_arc_set_rotation(arc, 135);
+    // lv_arc_set_bg_angles(arc, 0, 270);
+    // lv_arc_set_value(arc, 10);
+    // lv_obj_center(arc);
+    // lv_obj_add_event_cb(arc, value_changed_event_cb, LV_EVENT_VALUE_CHANGED, label);
+
+    // // Manually update the label for the first time
+    // lv_obj_send_event(arc, LV_EVENT_VALUE_CHANGED, NULL);    
   }
 
   Serial.println("Setup done");
+}
+
+static void roller_event_handler(lv_event_t * e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    lv_obj_t * obj = lv_event_get_target_obj(e);
+    if(code == LV_EVENT_VALUE_CHANGED) {
+        char buf[32];
+        lv_roller_get_selected_str(obj, buf, sizeof(buf));
+        LV_LOG_USER("Selected month: %s\n", buf);
+    }
+}
+
+void createRollerWidget(void) {
+
+    lv_obj_t * roller1 = lv_roller_create(lv_screen_active());
+    lv_roller_set_options(roller1,
+                          "January\n"
+                          "February\n"
+                          "March\n"
+                          "April\n"
+                          "May\n"
+                          "June\n"
+                          "July\n"
+                          "August\n"
+                          "September\n"
+                          "October\n"
+                          "November\n"
+                          "December",
+                          LV_ROLLER_MODE_INFINITE);
+
+    lv_roller_set_visible_row_count(roller1, 4);
+    lv_obj_center(roller1);
+    lv_obj_add_event_cb(roller1, roller_event_handler, LV_EVENT_ALL, NULL);
 }
 
 void loop()
