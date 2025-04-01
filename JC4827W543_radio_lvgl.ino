@@ -7,6 +7,7 @@
                              // Install "Dev Device Pins" with the Library Manager (last tested on v0.0.2)
 #include "TAMC_GT911.h"      // Install "TAMC_GT911" with the Library Manager (last tested on v1.0.2)
 #include "Audio.h"           // Install "ESP32-audioI2S-master" with the library manager (last tested on v3.0.13)
+#include <ArduinoJson.h>     // Install "ArduinoJson" with the library manager (last tested on v7.3.1)
 #include <SD_MMC.h>          // Included with the Espressif Arduino Core (last tested on v3.2.0)
 #include "WiFi.h"            // Included with the Espressif Arduino Core (last tested on v3.2.0)
 #include "secrets.h"         // Rename secrets_rename.h to secrets.h and add your SSID and password for your Wifi network
@@ -28,6 +29,7 @@ lv_display_t *disp;
 lv_color_t *disp_draw_buf;
 
 Audio audio; // Audio global variable
+String radioOptions = "";
 
 const char *root = "/root"; // Do not change this, it is needed to access files properly on the SD card
 
@@ -114,6 +116,48 @@ void connectToWiFi()
   Serial.println("\nWi-Fi connected!");
 }
 
+void readRadioJson() {
+  File file = SD_MMC.open("/radio.json");
+  if (!file) {
+    Serial.println("Failed to open radio.json");
+    return;
+  }
+
+  size_t size = file.size();
+  if (size > 1024) {
+    Serial.println("radio.json is too large");
+    file.close();
+    return;
+  }
+  
+  std::unique_ptr<char[]> buf(new char[size + 1]);
+  file.readBytes(buf.get(), size);
+  buf[size] = '\0';
+  file.close();
+  
+  DynamicJsonDocument doc(1024);
+  DeserializationError error = deserializeJson(doc, buf.get());
+  if (error) {
+    Serial.print("deserializeJson() failed: ");
+    Serial.println(error.f_str());
+    return;
+  }
+  
+  JsonArray sources = doc["radioSources"].as<JsonArray>();
+  radioOptions = "";
+  for (JsonObject src : sources) {
+    radioOptions += src["name"].as<const char*>();
+    radioOptions += "\n";
+  }
+  
+  if (radioOptions.endsWith("\n")) {
+    radioOptions.remove(radioOptions.length() - 1);
+  }
+  
+  Serial.println("Radio options loaded:");
+  Serial.println(radioOptions);
+}
+
 void setup()
 {
   Serial.begin(115200);
@@ -136,6 +180,7 @@ void setup()
 
   // Connect to Wi-Fi
   connectToWiFi();
+  readRadioJson();
 
   // Init Display
   if (!gfx->begin())
@@ -231,39 +276,33 @@ void setup()
   Serial.println("Setup done");
 }
 
-static void roller_event_handler(lv_event_t *e)
-{
+static void roller_event_handler(lv_event_t * e) {
   lv_event_code_t code = lv_event_get_code(e);
-  lv_obj_t *obj = lv_event_get_target_obj(e);
-  if (code == LV_EVENT_VALUE_CHANGED)
-  {
-    char buf[32];
-    lv_roller_get_selected_str(obj, buf, sizeof(buf));
-    LV_LOG_USER("Selected month: %s\n", buf);
+  if(code == LV_EVENT_VALUE_CHANGED) {
+      // Explicitly cast the returned void pointer to lv_obj_t*
+      lv_obj_t * roller = (lv_obj_t *) lv_event_get_target(e);
+      char buf[32];
+      lv_roller_get_selected_str(roller, buf, sizeof(buf));
+      Serial.print("Selected radio station: ");
+      Serial.println(buf);
   }
 }
 
-void createRollerWidget(void)
-{
-
-  lv_obj_t *roller1 = lv_roller_create(lv_screen_active());
-  lv_roller_set_options(roller1,
-                        "January\n"
-                        "February\n"
-                        "March\n"
-                        "April\n"
-                        "May\n"
-                        "June\n"
-                        "July\n"
-                        "August\n"
-                        "September\n"
-                        "October\n"
-                        "November\n"
-                        "December",
-                        LV_ROLLER_MODE_INFINITE);
-
+void createRollerWidget() {
+  // Create a roller widget on the active screen.
+  lv_obj_t * roller1 = lv_roller_create(lv_screen_active());
+  
+  // Set the options using the radioOptions string obtained from radio.json.
+  // The LV_ROLLER_MODE_INFINITE flag makes the options scroll infinitely.
+  lv_roller_set_options(roller1, radioOptions.c_str(), LV_ROLLER_MODE_INFINITE);
+  
+  // Define the number of visible rows in the roller.
   lv_roller_set_visible_row_count(roller1, 4);
+  
+  // Center the roller widget on the screen.
   lv_obj_center(roller1);
+  
+  // Attach the event callback to handle interactions.
   lv_obj_add_event_cb(roller1, roller_event_handler, LV_EVENT_ALL, NULL);
 }
 
