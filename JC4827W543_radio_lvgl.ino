@@ -11,6 +11,7 @@
 #include "Audio.h"           // Install this library as Zip in the IDE : https://github.com/pschatzmann/arduino-audio-tools
 #include <SD_MMC.h>          // Included with the Espressif Arduino Core (last tested on v3.2.0)
 #include "WiFi.h"            // Included with the Espressif Arduino Core (last tested on v3.2.0)
+#include "secrets.h"         // Rename secrets_rename.h to secrets.h and add your SSID and password for your Wifi network
 
 // Touch Controller
 #define TOUCH_SDA 8
@@ -21,12 +22,19 @@
 #define TOUCH_HEIGHT 272
 TAMC_GT911 touchController = TAMC_GT911(TOUCH_SDA, TOUCH_SCL, TOUCH_INT, TOUCH_RST, TOUCH_WIDTH, TOUCH_HEIGHT);
 
+// SD Pins
+#define SD_MMC_D0 11
+#define SD_MMC_CLK 13
+#define SD_MMC_CMD 14
+
 // Display global variables
 uint32_t screenWidth;
 uint32_t screenHeight;
 uint32_t bufSize;
 lv_display_t *disp;
 lv_color_t *disp_draw_buf;
+
+Audio audio;  // Audio global variable
 
 // LVGL calls this function to print log information
 void my_print(lv_log_level_t level, const char *buf)
@@ -98,12 +106,26 @@ static void value_changed_event_cb(lv_event_t * e)
     lv_arc_rotate_obj_to_angle(arc, label, 25);
 }
 
+// Connect to Wi-Fi
+void connectToWiFi() {
+  Serial.print("Connecting to Wi-Fi");
+  WiFi.begin(ssid, password);
+  while(WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+  Serial.println("\nWi-Fi connected!");
+}
+
 void setup()
 {
   Serial.begin(115200);
   Serial.println("Arduino_GFX LVGL_Arduino_v9 example ");
   String LVGL_Arduino = String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
   Serial.println(LVGL_Arduino);
+
+    // Connect to Wi-Fi
+    connectToWiFi();
 
   // Init Display
   if (!gfx->begin())
