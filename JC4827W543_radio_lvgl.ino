@@ -173,7 +173,7 @@ void setup()
     lv_obj_center(btn_label);
 
     createRollerWidget();
-    LV_IMAGE_DECLARE(img_cogwheel_argb);
+    // LV_IMAGE_DECLARE(img_cogwheel_argb);
 
     // // Arc Widget
     // lv_obj_t * label = lv_label_create(lv_screen_active());
