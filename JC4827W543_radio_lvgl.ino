@@ -8,7 +8,7 @@
 #include <PINS_JC4827W543.h> // Install "GFX Library for Arduino" with the Library Manager (last tested on v1.5.6)
                              // Install "Dev Device Pins" with the Library Manager (last tested on v0.0.2)
 #include "TAMC_GT911.h"      // Install "TAMC_GT911" with the Library Manager (last tested on v1.0.2)
-#include "Audio.h"           // Install this library as Zip in the IDE : https://github.com/pschatzmann/arduino-audio-tools
+#include "AudioTools.h"      // Install this library as Zip in the IDE : https://github.com/pschatzmann/arduino-audio-tools
 #include <SD_MMC.h>          // Included with the Espressif Arduino Core (last tested on v3.2.0)
 #include "WiFi.h"            // Included with the Espressif Arduino Core (last tested on v3.2.0)
 #include "secrets.h"         // Rename secrets_rename.h to secrets.h and add your SSID and password for your Wifi network
