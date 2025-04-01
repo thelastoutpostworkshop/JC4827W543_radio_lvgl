@@ -1,11 +1,17 @@
 // LVGLv9 for the JC4827W543 development board
 // Use board "ESP32S3 Dev Module" from esp32 Arduino Core by Espressif (last tested on v3.2.0)
 // Do not forget to configure to setup and configure lv_conf.h : https://docs.lvgl.io/master/get-started/platforms/arduino.html
+// Libraries that you need to intall as Zip in the IDE:
+// avilib: https://github.com/lanyou1900/avilib.git install as zip in the Arduino IDE
 
 #include <lvgl.h>            // Install "lvgl" with the Library Manager (last tested on v9.2.2)
 #include <PINS_JC4827W543.h> // Install "GFX Library for Arduino" with the Library Manager (last tested on v1.5.6)
                              // Install "Dev Device Pins" with the Library Manager (last tested on v0.0.2)
 #include "TAMC_GT911.h"      // Install "TAMC_GT911" with the Library Manager (last tested on v1.0.2)
+#include "Audio.h"           // Install this library as Zip in the IDE : https://github.com/pschatzmann/arduino-audio-tools
+#include <SD_MMC.h>          // Included with the Espressif Arduino Core (last tested on v3.2.0)
+#include "WiFi.h"            // Included with the Espressif Arduino Core (last tested on v3.2.0)
+
 // Touch Controller
 #define TOUCH_SDA 8
 #define TOUCH_SCL 4
