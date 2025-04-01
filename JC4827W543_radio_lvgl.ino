@@ -22,11 +22,6 @@
 #define TOUCH_HEIGHT 272
 TAMC_GT911 touchController = TAMC_GT911(TOUCH_SDA, TOUCH_SCL, TOUCH_INT, TOUCH_RST, TOUCH_WIDTH, TOUCH_HEIGHT);
 
-// SD Pins
-#define SD_MMC_D0 11
-#define SD_MMC_CLK 13
-#define SD_MMC_CMD 14
-
 // Display global variables
 uint32_t screenWidth;
 uint32_t screenHeight;
@@ -34,7 +29,9 @@ uint32_t bufSize;
 lv_display_t *disp;
 lv_color_t *disp_draw_buf;
 
-Audio audio;  // Audio global variable
+Audio audio; // Audio global variable
+
+const char *root = "/root"; // Do not change this, it is needed to access files properly on the SD card
 
 // LVGL calls this function to print log information
 void my_print(lv_log_level_t level, const char *buf)
@@ -95,22 +92,24 @@ static void btn_event_cb(lv_event_t *e)
   }
 }
 
-static void value_changed_event_cb(lv_event_t * e)
+static void value_changed_event_cb(lv_event_t *e)
 {
-    lv_obj_t * arc = lv_event_get_target_obj(e);
-    lv_obj_t * label = (lv_obj_t *)lv_event_get_user_data(e);
+  lv_obj_t *arc = lv_event_get_target_obj(e);
+  lv_obj_t *label = (lv_obj_t *)lv_event_get_user_data(e);
 
-    lv_label_set_text_fmt(label, "%" LV_PRId32 "%%", lv_arc_get_value(arc));
+  lv_label_set_text_fmt(label, "%" LV_PRId32 "%%", lv_arc_get_value(arc));
 
-    /*Rotate the label to the current position of the arc*/
-    lv_arc_rotate_obj_to_angle(arc, label, 25);
+  /*Rotate the label to the current position of the arc*/
+  lv_arc_rotate_obj_to_angle(arc, label, 25);
 }
 
 // Connect to Wi-Fi
-void connectToWiFi() {
+void connectToWiFi()
+{
   Serial.print("Connecting to Wi-Fi");
   WiFi.begin(ssid, password);
-  while(WiFi.status() != WL_CONNECTED) {
+  while (WiFi.status() != WL_CONNECTED)
+  {
     delay(500);
     Serial.print(".");
   }
@@ -124,8 +123,21 @@ void setup()
   String LVGL_Arduino = String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
   Serial.println(LVGL_Arduino);
 
-    // Connect to Wi-Fi
-    connectToWiFi();
+  // SD Card initialization
+  pinMode(SD_CS, OUTPUT);
+  digitalWrite(SD_CS, HIGH);
+  SD_MMC.setPins(SD_SCK, SD_MOSI /* CMD */, SD_MISO /* D0 */);
+  if (!SD_MMC.begin(root, true /* mode1bit */, false /* format_if_mount_failed */, SDMMC_FREQ_DEFAULT))
+  {
+    Serial.println("ERROR: SD Card mount failed!");
+    while (true)
+    {
+      /* no need to continue */
+    }
+  }
+
+  // Connect to Wi-Fi
+  connectToWiFi();
 
   // Init Display
   if (!gfx->begin())
@@ -215,44 +227,46 @@ void setup()
     // lv_obj_add_event_cb(arc, value_changed_event_cb, LV_EVENT_VALUE_CHANGED, label);
 
     // // Manually update the label for the first time
-    // lv_obj_send_event(arc, LV_EVENT_VALUE_CHANGED, NULL);    
+    // lv_obj_send_event(arc, LV_EVENT_VALUE_CHANGED, NULL);
   }
 
   Serial.println("Setup done");
 }
 
-static void roller_event_handler(lv_event_t * e)
+static void roller_event_handler(lv_event_t *e)
 {
-    lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t * obj = lv_event_get_target_obj(e);
-    if(code == LV_EVENT_VALUE_CHANGED) {
-        char buf[32];
-        lv_roller_get_selected_str(obj, buf, sizeof(buf));
-        LV_LOG_USER("Selected month: %s\n", buf);
-    }
+  lv_event_code_t code = lv_event_get_code(e);
+  lv_obj_t *obj = lv_event_get_target_obj(e);
+  if (code == LV_EVENT_VALUE_CHANGED)
+  {
+    char buf[32];
+    lv_roller_get_selected_str(obj, buf, sizeof(buf));
+    LV_LOG_USER("Selected month: %s\n", buf);
+  }
 }
 
-void createRollerWidget(void) {
+void createRollerWidget(void)
+{
 
-    lv_obj_t * roller1 = lv_roller_create(lv_screen_active());
-    lv_roller_set_options(roller1,
-                          "January\n"
-                          "February\n"
-                          "March\n"
-                          "April\n"
-                          "May\n"
-                          "June\n"
-                          "July\n"
-                          "August\n"
-                          "September\n"
-                          "October\n"
-                          "November\n"
-                          "December",
-                          LV_ROLLER_MODE_INFINITE);
+  lv_obj_t *roller1 = lv_roller_create(lv_screen_active());
+  lv_roller_set_options(roller1,
+                        "January\n"
+                        "February\n"
+                        "March\n"
+                        "April\n"
+                        "May\n"
+                        "June\n"
+                        "July\n"
+                        "August\n"
+                        "September\n"
+                        "October\n"
+                        "November\n"
+                        "December",
+                        LV_ROLLER_MODE_INFINITE);
 
-    lv_roller_set_visible_row_count(roller1, 4);
-    lv_obj_center(roller1);
-    lv_obj_add_event_cb(roller1, roller_event_handler, LV_EVENT_ALL, NULL);
+  lv_roller_set_visible_row_count(roller1, 4);
+  lv_obj_center(roller1);
+  lv_obj_add_event_cb(roller1, roller_event_handler, LV_EVENT_ALL, NULL);
 }
 
 void loop()
