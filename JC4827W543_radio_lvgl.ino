@@ -317,17 +317,16 @@ lv_obj_t *createRollerWidget()
 
   // Create a label above the roller for the title.
   lv_obj_t *label = lv_label_create(lv_scr_act());
-  lv_label_set_text(label, "Choose your radio station");
+  lv_label_set_text(label, "Choose your radio station:");
   lv_obj_align_to(label, roller1, LV_ALIGN_OUT_TOP_MID, 0, -10);
 
   // Return the pointer so it can be used for aligning other objects.
   return roller1;
 }
 
-void radio(void)
-{
-    audio.setVolume(21); // default 0...21
-    audio.connecttohost("https://streaming05.liveboxstream.uk/proxy/roksta12/stream");
+void radio(const char* radioUrl) {
+  audio.setVolume(21); // default 0...21
+  audio.connecttohost(radioUrl);
 }
 
 void loop()
