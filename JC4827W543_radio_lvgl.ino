@@ -30,8 +30,10 @@ lv_color_t *disp_draw_buf;
 
 #define jsonRadioSourceMaxSize 4096
 #define MAX_RADIO_SOURCES 20
-String radioUrlsArray[MAX_RADIO_SOURCES]; // Array to store radio station URLs
-int radioSourcesCount = 0;                // Count of radio sources
+String radioUrlsArray[MAX_RADIO_SOURCES];       // Stores the radio station URLs
+String radioNamesArray[MAX_RADIO_SOURCES];        // Stores the radio station names
+String radioDescriptionsArray[MAX_RADIO_SOURCES]; // Stores the radio station descriptions
+int radioSourcesCount = 0;                        // Count of radio sources
 lv_obj_t *rollerWidget = NULL;            // Global pointer to the roller widget
 
 Audio audio; // Audio global variable
@@ -160,17 +162,23 @@ void readRadioJson()
 
   JsonArray sources = doc["radioSources"].as<JsonArray>();
   radioOptions = "";
-  radioSourcesCount = 0;  // reset counter
+  radioSourcesCount = 0;  // Reset counter
 
   for (JsonObject src : sources)
   {
     const char* name = src["name"].as<const char*>();
     const char* url = src["url"].as<const char*>();
-    if (name && url && radioSourcesCount < MAX_RADIO_SOURCES)
+    const char* description = src["description"].as<const char*>();
+    if (name && url && description && radioSourcesCount < MAX_RADIO_SOURCES)
     {
+      // Build the options string with names (separated by newline)
       radioOptions += name;
       radioOptions += "\n";
+
+      // Store the name, URL, and description in parallel arrays.
+      radioNamesArray[radioSourcesCount] = String(name);
       radioUrlsArray[radioSourcesCount] = String(url);
+      radioDescriptionsArray[radioSourcesCount] = String(description);
       radioSourcesCount++;
     }
   }
@@ -180,9 +188,25 @@ void readRadioJson()
     radioOptions.remove(radioOptions.length() - 1);
   }
 
+  // Print the concatenated radio options (names)
   Serial.println("Radio options loaded:");
   Serial.println(radioOptions);
+
+  // Print detailed information (names, URLs, and descriptions) for each radio source
+  Serial.println("Detailed radio source information:");
+  for (int i = 0; i < radioSourcesCount; i++)
+  {
+    Serial.print("Station ");
+    Serial.print(i);
+    Serial.print(": Name = ");
+    Serial.print(radioNamesArray[i]);
+    Serial.print(", URL = ");
+    Serial.print(radioUrlsArray[i]);
+    Serial.print(", Description = ");
+    Serial.println(radioDescriptionsArray[i]);
+  }
 }
+
 
 
 void setup()
@@ -345,6 +369,7 @@ lv_obj_t *createRollerWidget()
 
 
 void radio(const char* radioUrl) {
+  Serial.printf("Connection to station %s\n",radioUrl);
   audio.setVolume(21); // default 0...21
   audio.connecttohost(radioUrl);
 }
