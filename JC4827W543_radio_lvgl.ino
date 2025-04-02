@@ -311,17 +311,17 @@ void loop()
 {
   lv_task_handler(); /* let the GUI do its work */
 
-#ifdef DIRECT_MODE
-#if defined(CANVAS) || defined(RGB_PANEL) || defined(DSI_PANEL)
-  gfx->flush();
-#else  // !(defined(CANVAS) || defined(RGB_PANEL) || defined(DSI_PANEL))
-  gfx->draw16bitRGBBitmap(0, 0, (uint16_t *)disp_draw_buf, screenWidth, screenHeight);
-#endif // !(defined(CANVAS) || defined(RGB_PANEL) || defined(DSI_PANEL))
-#else  // !DIRECT_MODE
-#ifdef CANVAS
-  gfx->flush();
-#endif
-#endif // !DIRECT_MODE
+// #ifdef DIRECT_MODE
+// #if defined(CANVAS) || defined(RGB_PANEL) || defined(DSI_PANEL)
+//   gfx->flush();
+// #else  // !(defined(CANVAS) || defined(RGB_PANEL) || defined(DSI_PANEL))
+//   gfx->draw16bitRGBBitmap(0, 0, (uint16_t *)disp_draw_buf, screenWidth, screenHeight);
+// #endif // !(defined(CANVAS) || defined(RGB_PANEL) || defined(DSI_PANEL))
+// #else  // !DIRECT_MODE
+// #ifdef CANVAS
+//   gfx->flush();
+// #endif
+// #endif // !DIRECT_MODE
 
   delay(5);
 }
