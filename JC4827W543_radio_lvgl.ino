@@ -28,6 +28,7 @@ uint32_t bufSize;
 lv_display_t *disp;
 lv_color_t *disp_draw_buf;
 
+#define jsonRadioSourceMaxSize 4096
 Audio audio; // Audio global variable
 String radioOptions = "";
 
@@ -124,7 +125,7 @@ void readRadioJson() {
   }
 
   size_t size = file.size();
-  if (size > 1024) {
+  if (size > jsonRadioSourceMaxSize) {
     Serial.println("radio.json is too large");
     file.close();
     return;
@@ -135,7 +136,7 @@ void readRadioJson() {
   buf[size] = '\0';
   file.close();
   
-  DynamicJsonDocument doc(1024);
+  DynamicJsonDocument doc(jsonRadioSourceMaxSize);
   DeserializationError error = deserializeJson(doc, buf.get());
   if (error) {
     Serial.print("deserializeJson() failed: ");
