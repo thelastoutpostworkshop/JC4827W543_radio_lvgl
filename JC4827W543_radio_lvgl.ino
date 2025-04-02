@@ -29,6 +29,11 @@ lv_display_t *disp;
 lv_color_t *disp_draw_buf;
 
 #define jsonRadioSourceMaxSize 4096
+#define MAX_RADIO_SOURCES 20
+String radioUrlsArray[MAX_RADIO_SOURCES]; // Array to store radio station URLs
+int radioSourcesCount = 0;                // Count of radio sources
+lv_obj_t *rollerWidget = NULL;            // Global pointer to the roller widget
+
 Audio audio; // Audio global variable
 String radioOptions = "";
 
@@ -80,18 +85,23 @@ void my_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data)
 
 static void btn_event_cb(lv_event_t *e)
 {
-  lv_event_code_t code = lv_event_get_code(e);
-  lv_obj_t *btn = (lv_obj_t *)lv_event_get_target(e);
-  if (code == LV_EVENT_CLICKED)
+  if (lv_event_get_code(e) == LV_EVENT_CLICKED)
   {
-    static uint8_t cnt = 0;
-    cnt++;
+    // Retrieve the selected index from the roller widget.
+    int sel = lv_roller_get_selected(rollerWidget);
+    Serial.print("Button pressed, selected index: ");
+    Serial.println(sel);
 
-    /*Get the first child of the button which is the label and change its text*/
-    lv_obj_t *label = lv_obj_get_child(btn, 0);
-    lv_label_set_text_fmt(label, "Button: %d", cnt);
+    // Validate the index.
+    if (sel < 0 || sel >= radioSourcesCount) {
+      Serial.println("Invalid selection, using default radio station.");
+      sel = 0;
+    }
+    // Launch the radio stream corresponding to the selected URL.
+    radio(radioUrlsArray[sel].c_str());
   }
 }
+
 
 static void value_changed_event_cb(lv_event_t *e)
 {
@@ -150,10 +160,19 @@ void readRadioJson()
 
   JsonArray sources = doc["radioSources"].as<JsonArray>();
   radioOptions = "";
+  radioSourcesCount = 0;  // reset counter
+
   for (JsonObject src : sources)
   {
-    radioOptions += src["name"].as<const char *>();
-    radioOptions += "\n";
+    const char* name = src["name"].as<const char*>();
+    const char* url = src["url"].as<const char*>();
+    if (name && url && radioSourcesCount < MAX_RADIO_SOURCES)
+    {
+      radioOptions += name;
+      radioOptions += "\n";
+      radioUrlsArray[radioSourcesCount] = String(url);
+      radioSourcesCount++;
+    }
   }
 
   if (radioOptions.endsWith("\n"))
@@ -164,6 +183,7 @@ void readRadioJson()
   Serial.println("Radio options loaded:");
   Serial.println(radioOptions);
 }
+
 
 void setup()
 {
@@ -307,22 +327,22 @@ static void roller_event_handler(lv_event_t *e)
 // Function to create the roller widget and return its pointer.
 lv_obj_t *createRollerWidget()
 {
-  lv_obj_t *roller1 = lv_roller_create(lv_scr_act());
-  lv_roller_set_options(roller1, radioOptions.c_str(), LV_ROLLER_MODE_INFINITE);
-  lv_roller_set_visible_row_count(roller1, 4);
+  rollerWidget = lv_roller_create(lv_scr_act());
+  lv_roller_set_options(rollerWidget, radioOptions.c_str(), LV_ROLLER_MODE_INFINITE);
+  lv_roller_set_visible_row_count(rollerWidget, 4);
 
-  // Align the roller to the top left of the screen with some margin.
-  lv_obj_align(roller1, LV_ALIGN_TOP_LEFT, 10, 40);
-  lv_obj_add_event_cb(roller1, roller_event_handler, LV_EVENT_ALL, NULL);
+  // Align the roller to the top left with a margin.
+  lv_obj_align(rollerWidget, LV_ALIGN_TOP_LEFT, 10, 40);
+  lv_obj_add_event_cb(rollerWidget, roller_event_handler, LV_EVENT_ALL, NULL);
 
-  // Create a label above the roller for the title.
+  // Create a label above the roller.
   lv_obj_t *label = lv_label_create(lv_scr_act());
   lv_label_set_text(label, "Choose your radio station:");
-  lv_obj_align_to(label, roller1, LV_ALIGN_OUT_TOP_MID, 0, -10);
+  lv_obj_align_to(label, rollerWidget, LV_ALIGN_OUT_TOP_MID, 0, -10);
 
-  // Return the pointer so it can be used for aligning other objects.
-  return roller1;
+  return rollerWidget;
 }
+
 
 void radio(const char* radioUrl) {
   audio.setVolume(21); // default 0...21
