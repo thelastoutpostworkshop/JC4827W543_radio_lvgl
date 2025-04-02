@@ -252,17 +252,20 @@ void setup()
     lv_label_set_text(title_label, "LVGL(V" GFX_STR(LVGL_VERSION_MAJOR) "." GFX_STR(LVGL_VERSION_MINOR) "." GFX_STR(LVGL_VERSION_PATCH) ")");
     lv_obj_align(title_label, LV_ALIGN_BOTTOM_MID, 0, 0);
 
-    // Button Widget
-    lv_obj_t *btn = lv_button_create(lv_screen_active());       /*Add a button to the current screen*/
-    lv_obj_set_pos(btn, 10, 10);                                /*Set its position*/
-    lv_obj_set_size(btn, 120, 50);                              /*Set its size*/
-    lv_obj_add_event_cb(btn, btn_event_cb, LV_EVENT_ALL, NULL); /*Assign a callback to the button*/
+    // Create the roller and capture its pointer.
+    lv_obj_t *roller = createRollerWidget();
 
-    lv_obj_t *btn_label = lv_label_create(btn); /*Add a label to the button*/
-    lv_label_set_text(btn_label, "Play");     /*Set the label's text*/
+    // Create the button widget.
+    lv_obj_t *btn = lv_button_create(lv_scr_act());
+    // Align the button below the roller (with a 10-pixel vertical offset).
+    lv_obj_align_to(btn, roller, LV_ALIGN_OUT_BOTTOM_MID, 0, 10);
+    lv_obj_set_size(btn, 120, 50);
+    lv_obj_add_event_cb(btn, btn_event_cb, LV_EVENT_ALL, NULL);
+
+    // Add a label to the button.
+    lv_obj_t *btn_label = lv_label_create(btn);
+    lv_label_set_text(btn_label, "Play");
     lv_obj_center(btn_label);
-
-    createRollerWidget();
     // LV_IMAGE_DECLARE(img_cogwheel_argb);
 
     // // Arc Widget
@@ -297,31 +300,41 @@ static void roller_event_handler(lv_event_t *e)
   }
 }
 
-// Create a roller widget on the active screen.
-void createRollerWidget()
+// Function to create the roller widget and return its pointer.
+lv_obj_t *createRollerWidget()
 {
-  lv_obj_t *roller1 = lv_roller_create(lv_screen_active());
+  lv_obj_t *roller1 = lv_roller_create(lv_scr_act());
   lv_roller_set_options(roller1, radioOptions.c_str(), LV_ROLLER_MODE_INFINITE);
   lv_roller_set_visible_row_count(roller1, 4);
+
+  // Align the roller to the left middle of the screen.
   lv_obj_align(roller1, LV_ALIGN_LEFT_MID, 0, 0);
   lv_obj_add_event_cb(roller1, roller_event_handler, LV_EVENT_ALL, NULL);
+
+  // Create a label above the roller for the title.
+  lv_obj_t *label = lv_label_create(lv_scr_act());
+  lv_label_set_text(label, "Choose your radio station");
+  lv_obj_align_to(label, roller1, LV_ALIGN_OUT_TOP_MID, 0, -10);
+
+  // Return the pointer so it can be used for aligning other objects.
+  return roller1;
 }
 
 void loop()
 {
   lv_task_handler(); /* let the GUI do its work */
 
-// #ifdef DIRECT_MODE
-// #if defined(CANVAS) || defined(RGB_PANEL) || defined(DSI_PANEL)
-//   gfx->flush();
-// #else  // !(defined(CANVAS) || defined(RGB_PANEL) || defined(DSI_PANEL))
-//   gfx->draw16bitRGBBitmap(0, 0, (uint16_t *)disp_draw_buf, screenWidth, screenHeight);
-// #endif // !(defined(CANVAS) || defined(RGB_PANEL) || defined(DSI_PANEL))
-// #else  // !DIRECT_MODE
-// #ifdef CANVAS
-//   gfx->flush();
-// #endif
-// #endif // !DIRECT_MODE
+  // #ifdef DIRECT_MODE
+  // #if defined(CANVAS) || defined(RGB_PANEL) || defined(DSI_PANEL)
+  //   gfx->flush();
+  // #else  // !(defined(CANVAS) || defined(RGB_PANEL) || defined(DSI_PANEL))
+  //   gfx->draw16bitRGBBitmap(0, 0, (uint16_t *)disp_draw_buf, screenWidth, screenHeight);
+  // #endif // !(defined(CANVAS) || defined(RGB_PANEL) || defined(DSI_PANEL))
+  // #else  // !DIRECT_MODE
+  // #ifdef CANVAS
+  //   gfx->flush();
+  // #endif
+  // #endif // !DIRECT_MODE
 
   delay(5);
 }
