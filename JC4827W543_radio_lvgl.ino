@@ -189,6 +189,10 @@ void setup()
   connectToWiFi();
   readRadioJson();
 
+  // Audio setup
+  audio.setPinout(I2S_BCLK, I2S_LRCK, I2S_DOUT);
+  audio.setVolume(0); // default 0...21
+
   // Init Display
   if (!gfx->begin())
   {
@@ -307,8 +311,8 @@ lv_obj_t *createRollerWidget()
   lv_roller_set_options(roller1, radioOptions.c_str(), LV_ROLLER_MODE_INFINITE);
   lv_roller_set_visible_row_count(roller1, 4);
 
-  // Align the roller to the left middle of the screen.
-  lv_obj_align(roller1, LV_ALIGN_LEFT_MID, 0, 0);
+  // Align the roller to the top left of the screen with some margin.
+  lv_obj_align(roller1, LV_ALIGN_TOP_LEFT, 10, 40);
   lv_obj_add_event_cb(roller1, roller_event_handler, LV_EVENT_ALL, NULL);
 
   // Create a label above the roller for the title.
@@ -323,18 +327,6 @@ lv_obj_t *createRollerWidget()
 void loop()
 {
   lv_task_handler(); /* let the GUI do its work */
-
-  // #ifdef DIRECT_MODE
-  // #if defined(CANVAS) || defined(RGB_PANEL) || defined(DSI_PANEL)
-  //   gfx->flush();
-  // #else  // !(defined(CANVAS) || defined(RGB_PANEL) || defined(DSI_PANEL))
-  //   gfx->draw16bitRGBBitmap(0, 0, (uint16_t *)disp_draw_buf, screenWidth, screenHeight);
-  // #endif // !(defined(CANVAS) || defined(RGB_PANEL) || defined(DSI_PANEL))
-  // #else  // !DIRECT_MODE
-  // #ifdef CANVAS
-  //   gfx->flush();
-  // #endif
-  // #endif // !DIRECT_MODE
 
   delay(5);
 }
