@@ -117,44 +117,50 @@ void connectToWiFi()
   Serial.println("\nWi-Fi connected!");
 }
 
-void readRadioJson() {
+void readRadioJson()
+{
   File file = SD_MMC.open("/radio.json");
-  if (!file) {
+  if (!file)
+  {
     Serial.println("Failed to open radio.json");
     return;
   }
 
   size_t size = file.size();
-  if (size > jsonRadioSourceMaxSize) {
+  if (size > jsonRadioSourceMaxSize)
+  {
     Serial.println("radio.json is too large");
     file.close();
     return;
   }
-  
+
   std::unique_ptr<char[]> buf(new char[size + 1]);
   file.readBytes(buf.get(), size);
   buf[size] = '\0';
   file.close();
-  
+
   DynamicJsonDocument doc(jsonRadioSourceMaxSize);
   DeserializationError error = deserializeJson(doc, buf.get());
-  if (error) {
+  if (error)
+  {
     Serial.print("deserializeJson() failed: ");
     Serial.println(error.f_str());
     return;
   }
-  
+
   JsonArray sources = doc["radioSources"].as<JsonArray>();
   radioOptions = "";
-  for (JsonObject src : sources) {
-    radioOptions += src["name"].as<const char*>();
+  for (JsonObject src : sources)
+  {
+    radioOptions += src["name"].as<const char *>();
     radioOptions += "\n";
   }
-  
-  if (radioOptions.endsWith("\n")) {
+
+  if (radioOptions.endsWith("\n"))
+  {
     radioOptions.remove(radioOptions.length() - 1);
   }
-  
+
   Serial.println("Radio options loaded:");
   Serial.println(radioOptions);
 }
@@ -243,7 +249,7 @@ void setup()
 
     // Create some widgets to see if everything is working
     lv_obj_t *title_label = lv_label_create(lv_screen_active());
-    lv_label_set_text(title_label, "Hello Arduino, I'm LVGL!(V" GFX_STR(LVGL_VERSION_MAJOR) "." GFX_STR(LVGL_VERSION_MINOR) "." GFX_STR(LVGL_VERSION_PATCH) ")");
+    lv_label_set_text(title_label, "LVGL(V" GFX_STR(LVGL_VERSION_MAJOR) "." GFX_STR(LVGL_VERSION_MINOR) "." GFX_STR(LVGL_VERSION_PATCH) ")");
     lv_obj_align(title_label, LV_ALIGN_BOTTOM_MID, 0, 0);
 
     // Button Widget
@@ -253,7 +259,7 @@ void setup()
     lv_obj_add_event_cb(btn, btn_event_cb, LV_EVENT_ALL, NULL); /*Assign a callback to the button*/
 
     lv_obj_t *btn_label = lv_label_create(btn); /*Add a label to the button*/
-    lv_label_set_text(btn_label, "Button");     /*Set the label's text*/
+    lv_label_set_text(btn_label, "Play");     /*Set the label's text*/
     lv_obj_center(btn_label);
 
     createRollerWidget();
@@ -277,33 +283,27 @@ void setup()
   Serial.println("Setup done");
 }
 
-static void roller_event_handler(lv_event_t * e) {
+static void roller_event_handler(lv_event_t *e)
+{
   lv_event_code_t code = lv_event_get_code(e);
-  if(code == LV_EVENT_VALUE_CHANGED) {
-      // Explicitly cast the returned void pointer to lv_obj_t*
-      lv_obj_t * roller = (lv_obj_t *) lv_event_get_target(e);
-      char buf[32];
-      lv_roller_get_selected_str(roller, buf, sizeof(buf));
-      Serial.print("Selected radio station: ");
-      Serial.println(buf);
+  if (code == LV_EVENT_VALUE_CHANGED)
+  {
+    // Explicitly cast the returned void pointer to lv_obj_t*
+    lv_obj_t *roller = (lv_obj_t *)lv_event_get_target(e);
+    char buf[32];
+    lv_roller_get_selected_str(roller, buf, sizeof(buf));
+    Serial.print("Selected radio station: ");
+    Serial.println(buf);
   }
 }
 
-void createRollerWidget() {
-  // Create a roller widget on the active screen.
-  lv_obj_t * roller1 = lv_roller_create(lv_screen_active());
-  
-  // Set the options using the radioOptions string obtained from radio.json.
-  // The LV_ROLLER_MODE_INFINITE flag makes the options scroll infinitely.
+// Create a roller widget on the active screen.
+void createRollerWidget()
+{
+  lv_obj_t *roller1 = lv_roller_create(lv_screen_active());
   lv_roller_set_options(roller1, radioOptions.c_str(), LV_ROLLER_MODE_INFINITE);
-  
-  // Define the number of visible rows in the roller.
   lv_roller_set_visible_row_count(roller1, 4);
-  
-  // Center the roller widget on the screen.
-  lv_obj_center(roller1);
-  
-  // Attach the event callback to handle interactions.
+  lv_obj_align(roller1, LV_ALIGN_LEFT_MID, 0, 0);
   lv_obj_add_event_cb(roller1, roller_event_handler, LV_EVENT_ALL, NULL);
 }
 
