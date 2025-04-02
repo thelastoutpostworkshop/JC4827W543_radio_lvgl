@@ -324,9 +324,15 @@ lv_obj_t *createRollerWidget()
   return roller1;
 }
 
+void radio(void)
+{
+    audio.setVolume(21); // default 0...21
+    audio.connecttohost("https://streaming05.liveboxstream.uk/proxy/roksta12/stream");
+}
+
 void loop()
 {
   lv_task_handler(); /* let the GUI do its work */
-
-  delay(5);
+  audio.loop();
+  vTaskDelay(1);
 }
