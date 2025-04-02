@@ -35,6 +35,7 @@ String radioNamesArray[MAX_RADIO_SOURCES];        // Stores the radio station na
 String radioDescriptionsArray[MAX_RADIO_SOURCES]; // Stores the radio station descriptions
 int radioSourcesCount = 0;                        // Count of radio sources
 lv_obj_t *rollerWidget = NULL;            // Global pointer to the roller widget
+lv_obj_t *descriptionLabel; // Global pointer for the description label
 
 Audio audio; // Audio global variable
 String radioOptions = "";
@@ -295,6 +296,13 @@ void setup()
     lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
     lv_indev_set_read_cb(indev, my_touchpad_read);
 
+    descriptionLabel = lv_label_create(lv_scr_act());
+    lv_obj_set_width(descriptionLabel, screenWidth / 2);
+    lv_label_set_long_mode(descriptionLabel, LV_LABEL_LONG_WRAP);
+    lv_obj_align(descriptionLabel, LV_ALIGN_TOP_RIGHT, -10, 10);
+    lv_label_set_text(descriptionLabel, "Station description will appear here");
+
+
     // Create some widgets to see if everything is working
     lv_obj_t *title_label = lv_label_create(lv_screen_active());
     lv_label_set_text(title_label, "LVGL(V" GFX_STR(LVGL_VERSION_MAJOR) "." GFX_STR(LVGL_VERSION_MINOR) "." GFX_STR(LVGL_VERSION_PATCH) ")");
@@ -336,16 +344,22 @@ void setup()
 
 static void roller_event_handler(lv_event_t *e)
 {
-  lv_event_code_t code = lv_event_get_code(e);
-  if (code == LV_EVENT_VALUE_CHANGED)
-  {
-    // Explicitly cast the returned void pointer to lv_obj_t*
-    lv_obj_t *roller = (lv_obj_t *)lv_event_get_target(e);
-    char buf[32];
-    lv_roller_get_selected_str(roller, buf, sizeof(buf));
-    Serial.print("Selected radio station: ");
-    Serial.println(buf);
-  }
+    if(lv_event_get_code(e) == LV_EVENT_VALUE_CHANGED)
+    {
+        lv_obj_t *roller = (lv_obj_t *)lv_event_get_target(e);
+        int selectedIndex = lv_roller_get_selected(roller);
+        Serial.print("Selected radio station index: ");
+        Serial.println(selectedIndex);
+
+        if (selectedIndex >= 0 && selectedIndex < radioSourcesCount)
+        {
+            lv_label_set_text(descriptionLabel, radioDescriptionsArray[selectedIndex].c_str());
+        }
+        else
+        {
+            lv_label_set_text(descriptionLabel, "No description available");
+        }
+    }
 }
 
 // Function to create the roller widget and return its pointer.
