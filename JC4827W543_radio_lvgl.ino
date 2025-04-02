@@ -297,7 +297,7 @@ void setup()
     lv_indev_set_read_cb(indev, my_touchpad_read);
 
     descriptionLabel = lv_label_create(lv_scr_act());
-    lv_obj_set_width(descriptionLabel, screenWidth / 2);
+    lv_obj_set_width(descriptionLabel, 180);
     lv_label_set_long_mode(descriptionLabel, LV_LABEL_LONG_WRAP);
     lv_obj_align(descriptionLabel, LV_ALIGN_TOP_RIGHT, -10, 10);
     lv_label_set_text(descriptionLabel, "Station description will appear here");

@@ -12,12 +12,12 @@
       },
       {
         "name": "France Info",
-        "description": "Écoutez toutes les chroniques de la journée et les émissions passées, les reportages et le journal du jour",
+        "description": "Ecoutez toutes les chroniques de la journee et les emissions passees, les reportages et le journal du jour",
         "url": "http://direct.franceinfo.fr/live/franceinfo-midfi.mp3"
       },
       {
         "name": "ROKit Radio Science Fiction",
-        "description": "The Vintage ROKiT Radio is a ‘not for profit’ streaming radio platform bringing you the best shows from the ‘Golden Age’ of radio and beyond",
+        "description": "The Vintage ROKiT Radio is a not for profit streaming radio platform bringing you the best shows from the Golden Age of radio and beyond",
         "url": "https://streaming05.liveboxstream.uk/proxy/roksta12/stream"
       }
     ]
