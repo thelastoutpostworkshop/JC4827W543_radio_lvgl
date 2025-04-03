@@ -11,6 +11,7 @@
 #include <SD_MMC.h>          // Included with the Espressif Arduino Core (last tested on v3.2.0)
 #include "WiFi.h"            // Included with the Espressif Arduino Core (last tested on v3.2.0)
 #include "secrets.h"         // Rename secrets_rename.h to secrets.h and add your SSID and password for your Wifi network
+#include "Arduino.h"
 
 // Touch Controller
 #define TOUCH_SDA 8
@@ -127,66 +128,28 @@ void setup()
   lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
   lv_indev_set_read_cb(indev, lvgl_touchpad_read);
 
+  createLabelLVGLVersion();
+
   descriptionLabel = lv_label_create(lv_scr_act());
   lv_obj_set_width(descriptionLabel, 190);
   lv_label_set_long_mode(descriptionLabel, LV_LABEL_LONG_WRAP);
   lv_obj_align(descriptionLabel, LV_ALIGN_TOP_RIGHT, -10, 10);
   lv_label_set_text(descriptionLabel, "Station description will appear here");
 
-  // Create some widgets to see if everything is working
-  lv_obj_t *title_label = lv_label_create(lv_screen_active());
-  lv_label_set_text(title_label, "LVGL(V" GFX_STR(LVGL_VERSION_MAJOR) "." GFX_STR(LVGL_VERSION_MINOR) "." GFX_STR(LVGL_VERSION_PATCH) ")");
-  lv_obj_align(title_label, LV_ALIGN_BOTTOM_MID, 0, 0);
-
   // Create the roller and capture its pointer.
   lv_obj_t *roller = createRollerWidget();
 
-  // Create the button widget.
-  lv_obj_t *btn = lv_button_create(lv_scr_act());
-  // Align the button below the roller (with a 10-pixel vertical offset).
-  lv_obj_set_size(btn, 120, 50);
-  lv_obj_align_to(btn, roller, LV_ALIGN_OUT_BOTTOM_MID, 0, 10);
-  lv_obj_add_event_cb(btn, lvgl_play_btn_event_cb, LV_EVENT_ALL, NULL);
+  createPlayButtonWidget(roller);
 
-  // Add a label to the button.
-  lv_obj_t *btn_label = lv_label_create(btn);
-  lv_label_set_text(btn_label, "Play");
-  lv_obj_center(btn_label);
-
-  // Create a volume arc widget
-  lv_obj_t *volume_arc = lv_arc_create(lv_scr_act());
-  lv_obj_set_size(volume_arc, 150, 150);
-
-  // Set the arc's rotation and background angles so the gauge has a nice appearance.
-  lv_arc_set_rotation(volume_arc, 135);
-  lv_arc_set_bg_angles(volume_arc, 0, 270);
-
-  // Set the range of the arc to match the audio volume range (0 to 21).
-  lv_arc_set_range(volume_arc, 0, 21);
-
-  // Set the initial value of the arc using the current volume.
-  lv_arc_set_value(volume_arc, audio.getVolume());
-
-  // Align the arc widget at the bottom right of the screen.
-  lv_obj_align(volume_arc, LV_ALIGN_BOTTOM_RIGHT, -30, -10);
-
-  // Create a label to display the current volume value.
-  lv_obj_t *volume_label = lv_label_create(lv_scr_act());
-  lv_label_set_text_fmt(volume_label, "Volume: %d", audio.getVolume());
-  // Align the label above the volume arc.
-  lv_obj_align_to(volume_label, volume_arc, LV_ALIGN_CENTER, 0, 0);
-
-  // Attach the volume event callback to the arc.
-  // The volume_label is passed as user data so the callback can update it.
-  lv_obj_add_event_cb(volume_arc, lvgl_volume_event_cb, LV_EVENT_VALUE_CHANGED, volume_label);
+  createVolumeWidget();
 
   Serial.println("Setup done");
 }
 
 void loop()
 {
-  lv_task_handler();  // let the GUI do its work 
-  audio.loop();       // let the Audio do its work
+  lv_task_handler(); // let the GUI do its work
+  audio.loop();      // let the Audio do its work
   vTaskDelay(1);
 }
 
@@ -287,6 +250,62 @@ void readRadioSources()
     Serial.print(", Description = ");
     Serial.println(radioDescriptionsArray[i]);
   }
+}
+
+// Display the volume control widget
+void createVolumeWidget()
+{
+  // Create a volume arc widget
+  lv_obj_t *volume_arc = lv_arc_create(lv_scr_act());
+  lv_obj_set_size(volume_arc, 150, 150);
+
+  // Set the arc's rotation and background angles so the gauge has a nice appearance.
+  lv_arc_set_rotation(volume_arc, 135);
+  lv_arc_set_bg_angles(volume_arc, 0, 270);
+
+  // Set the range of the arc to match the audio volume range (0 to 21).
+  lv_arc_set_range(volume_arc, 0, 21);
+
+  // Set the initial value of the arc using the current volume.
+  lv_arc_set_value(volume_arc, audio.getVolume());
+
+  // Align the arc widget at the bottom right of the screen.
+  lv_obj_align(volume_arc, LV_ALIGN_BOTTOM_RIGHT, -30, -10);
+
+  // Create a label to display the current volume value.
+  lv_obj_t *volume_label = lv_label_create(lv_scr_act());
+  lv_label_set_text_fmt(volume_label, "Volume: %d", audio.getVolume());
+  // Align the label above the volume arc.
+  lv_obj_align_to(volume_label, volume_arc, LV_ALIGN_CENTER, 0, 0);
+
+  // Attach the volume event callback to the arc.
+  // The volume_label is passed as user data so the callback can update it.
+  lv_obj_add_event_cb(volume_arc, lvgl_volume_event_cb, LV_EVENT_VALUE_CHANGED, volume_label);
+}
+
+// Display the play button
+void createPlayButtonWidget(lv_obj_t *roller)
+{
+  // Create the button widget.
+  lv_obj_t *btn = lv_button_create(lv_scr_act());
+  // Align the button below the roller (with a 10-pixel vertical offset).
+  lv_obj_set_size(btn, 120, 50);
+  lv_obj_align_to(btn, roller, LV_ALIGN_OUT_BOTTOM_MID, 0, 10);
+  lv_obj_add_event_cb(btn, lvgl_play_btn_event_cb, LV_EVENT_ALL, NULL);
+
+  // Add a label to the button.
+  lv_obj_t *btn_label = lv_label_create(btn);
+  lv_label_set_text(btn_label, "Play");
+  lv_obj_center(btn_label);
+}
+
+// Display a label showing the LVGL version currently used
+void createLabelLVGLVersion()
+{
+  // Create some widgets to see if everything is working
+  lv_obj_t *title_label = lv_label_create(lv_screen_active());
+  lv_label_set_text(title_label, "LVGL(V" GFX_STR(LVGL_VERSION_MAJOR) "." GFX_STR(LVGL_VERSION_MINOR) "." GFX_STR(LVGL_VERSION_PATCH) ")");
+  lv_obj_align(title_label, LV_ALIGN_BOTTOM_MID, 0, 0);
 }
 
 // LVGL calls this function to print log information
@@ -415,4 +434,3 @@ lv_obj_t *createRollerWidget()
 
   return rollerWidget;
 }
-
