@@ -28,14 +28,17 @@ uint32_t bufSize;
 lv_display_t *disp;
 lv_color_t *disp_draw_buf;
 
+// Radio sources global variables
 #define jsonRadioSourceMaxSize 4096
 #define MAX_RADIO_SOURCES 20
 String radioUrlsArray[MAX_RADIO_SOURCES];         // Stores the radio station URLs
 String radioNamesArray[MAX_RADIO_SOURCES];        // Stores the radio station names
 String radioDescriptionsArray[MAX_RADIO_SOURCES]; // Stores the radio station descriptions
 int radioSourcesCount = 0;                        // Count of radio sources
-lv_obj_t *rollerWidget = NULL;                    // Global pointer to the roller widget
-lv_obj_t *descriptionLabel;                       // Global pointer for the description label
+
+// LCGL Widget global variables
+lv_obj_t *rollerWidget = NULL; // Global pointer to the roller widget
+lv_obj_t *descriptionLabel;    // Global pointer for the description label
 
 Audio audio; // Audio global variable
 String radioOptions = "";
@@ -283,70 +286,68 @@ void setup()
       /* no need to continue */
     }
   }
-  else
-  {
-    disp = lv_display_create(screenWidth, screenHeight);
-    lv_display_set_flush_cb(disp, my_disp_flush);
-    lv_display_set_buffers(disp, disp_draw_buf, NULL, bufSize * 2, LV_DISPLAY_RENDER_MODE_PARTIAL);
 
-    // Create input device (touchpad of the JC4827W543)
-    lv_indev_t *indev = lv_indev_create();
-    lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
-    lv_indev_set_read_cb(indev, my_touchpad_read);
+  disp = lv_display_create(screenWidth, screenHeight);
+  lv_display_set_flush_cb(disp, my_disp_flush);
+  lv_display_set_buffers(disp, disp_draw_buf, NULL, bufSize * 2, LV_DISPLAY_RENDER_MODE_PARTIAL);
 
-    descriptionLabel = lv_label_create(lv_scr_act());
-    lv_obj_set_width(descriptionLabel, 190);
-    lv_label_set_long_mode(descriptionLabel, LV_LABEL_LONG_WRAP);
-    lv_obj_align(descriptionLabel, LV_ALIGN_TOP_RIGHT, -10, 10);
-    lv_label_set_text(descriptionLabel, "Station description will appear here");
+  // Create input device (touchpad of the JC4827W543)
+  lv_indev_t *indev = lv_indev_create();
+  lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
+  lv_indev_set_read_cb(indev, my_touchpad_read);
 
-    // Create some widgets to see if everything is working
-    lv_obj_t *title_label = lv_label_create(lv_screen_active());
-    lv_label_set_text(title_label, "LVGL(V" GFX_STR(LVGL_VERSION_MAJOR) "." GFX_STR(LVGL_VERSION_MINOR) "." GFX_STR(LVGL_VERSION_PATCH) ")");
-    lv_obj_align(title_label, LV_ALIGN_BOTTOM_MID, 0, 0);
+  descriptionLabel = lv_label_create(lv_scr_act());
+  lv_obj_set_width(descriptionLabel, 190);
+  lv_label_set_long_mode(descriptionLabel, LV_LABEL_LONG_WRAP);
+  lv_obj_align(descriptionLabel, LV_ALIGN_TOP_RIGHT, -10, 10);
+  lv_label_set_text(descriptionLabel, "Station description will appear here");
 
-    // Create the roller and capture its pointer.
-    lv_obj_t *roller = createRollerWidget();
+  // Create some widgets to see if everything is working
+  lv_obj_t *title_label = lv_label_create(lv_screen_active());
+  lv_label_set_text(title_label, "LVGL(V" GFX_STR(LVGL_VERSION_MAJOR) "." GFX_STR(LVGL_VERSION_MINOR) "." GFX_STR(LVGL_VERSION_PATCH) ")");
+  lv_obj_align(title_label, LV_ALIGN_BOTTOM_MID, 0, 0);
 
-    // Create the button widget.
-    lv_obj_t *btn = lv_button_create(lv_scr_act());
-    // Align the button below the roller (with a 10-pixel vertical offset).
-    lv_obj_set_size(btn, 120, 50);
-    lv_obj_align_to(btn, roller, LV_ALIGN_OUT_BOTTOM_MID, 0, 10);
-    lv_obj_add_event_cb(btn, btn_event_cb, LV_EVENT_ALL, NULL);
+  // Create the roller and capture its pointer.
+  lv_obj_t *roller = createRollerWidget();
 
-    // Add a label to the button.
-    lv_obj_t *btn_label = lv_label_create(btn);
-    lv_label_set_text(btn_label, "Play");
-    lv_obj_center(btn_label);
+  // Create the button widget.
+  lv_obj_t *btn = lv_button_create(lv_scr_act());
+  // Align the button below the roller (with a 10-pixel vertical offset).
+  lv_obj_set_size(btn, 120, 50);
+  lv_obj_align_to(btn, roller, LV_ALIGN_OUT_BOTTOM_MID, 0, 10);
+  lv_obj_add_event_cb(btn, btn_event_cb, LV_EVENT_ALL, NULL);
 
-    // Create a volume arc widget
-    lv_obj_t *volume_arc = lv_arc_create(lv_scr_act());
-    lv_obj_set_size(volume_arc, 150, 150);
+  // Add a label to the button.
+  lv_obj_t *btn_label = lv_label_create(btn);
+  lv_label_set_text(btn_label, "Play");
+  lv_obj_center(btn_label);
 
-    // Set the arc's rotation and background angles so the gauge has a nice appearance.
-    lv_arc_set_rotation(volume_arc, 135);
-    lv_arc_set_bg_angles(volume_arc, 0, 270);
+  // Create a volume arc widget
+  lv_obj_t *volume_arc = lv_arc_create(lv_scr_act());
+  lv_obj_set_size(volume_arc, 150, 150);
 
-    // Set the range of the arc to match the audio volume range (0 to 21).
-    lv_arc_set_range(volume_arc, 0, 21);
+  // Set the arc's rotation and background angles so the gauge has a nice appearance.
+  lv_arc_set_rotation(volume_arc, 135);
+  lv_arc_set_bg_angles(volume_arc, 0, 270);
 
-    // Set the initial value of the arc using the current volume.
-    lv_arc_set_value(volume_arc, audio.getVolume());
+  // Set the range of the arc to match the audio volume range (0 to 21).
+  lv_arc_set_range(volume_arc, 0, 21);
 
-    // Align the arc widget at the bottom right of the screen.
-    lv_obj_align(volume_arc, LV_ALIGN_BOTTOM_RIGHT, -10, -10);
+  // Set the initial value of the arc using the current volume.
+  lv_arc_set_value(volume_arc, audio.getVolume());
 
-    // Create a label to display the current volume value.
-    lv_obj_t *volume_label = lv_label_create(lv_scr_act());
-    lv_label_set_text_fmt(volume_label, "Volume: %d", audio.getVolume());
-    // Align the label above the volume arc.
-    lv_obj_align_to(volume_label, volume_arc, LV_ALIGN_CENTER, 0, 0);
+  // Align the arc widget at the bottom right of the screen.
+  lv_obj_align(volume_arc, LV_ALIGN_BOTTOM_RIGHT, -30, -10);
 
-    // Attach the volume event callback to the arc.
-    // The volume_label is passed as user data so the callback can update it.
-    lv_obj_add_event_cb(volume_arc, volume_event_cb, LV_EVENT_VALUE_CHANGED, volume_label);
-  }
+  // Create a label to display the current volume value.
+  lv_obj_t *volume_label = lv_label_create(lv_scr_act());
+  lv_label_set_text_fmt(volume_label, "Volume: %d", audio.getVolume());
+  // Align the label above the volume arc.
+  lv_obj_align_to(volume_label, volume_arc, LV_ALIGN_CENTER, 0, 0);
+
+  // Attach the volume event callback to the arc.
+  // The volume_label is passed as user data so the callback can update it.
+  lv_obj_add_event_cb(volume_arc, volume_event_cb, LV_EVENT_VALUE_CHANGED, volume_label);
 
   Serial.println("Setup done");
 }
