@@ -89,6 +89,7 @@ void lvgl_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data)
   }
 }
 
+// LVGL calls this function when the play button is pressed
 static void lvgl_play_btn_event_cb(lv_event_t *e)
 {
   if (lv_event_get_code(e) == LV_EVENT_CLICKED)
@@ -109,6 +110,7 @@ static void lvgl_play_btn_event_cb(lv_event_t *e)
   }
 }
 
+// LVGL calls this function when the play button is pressed
 static void value_changed_event_cb(lv_event_t *e)
 {
   lv_obj_t *arc = lv_event_get_target_obj(e);
