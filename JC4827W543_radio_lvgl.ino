@@ -71,7 +71,7 @@ void lvgl_disp_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map)
 }
 
 // LVGL calls this function to read the touchpad
-void my_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data)
+void lvgl_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data)
 {
   // Update the touch data from the GT911 touch controller
   touchController.read();
@@ -294,7 +294,7 @@ void setup()
   // Create input device (touchpad of the JC4827W543)
   lv_indev_t *indev = lv_indev_create();
   lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
-  lv_indev_set_read_cb(indev, my_touchpad_read);
+  lv_indev_set_read_cb(indev, lvgl_touchpad_read);
 
   descriptionLabel = lv_label_create(lv_scr_act());
   lv_obj_set_width(descriptionLabel, 190);
