@@ -123,7 +123,8 @@ void connectToWiFi()
   Serial.println("\nWi-Fi connected!");
 }
 
-void readRadioJson()
+// Read the json radio source from the SD Card
+void readRadioSources()
 {
   File file = SD_MMC.open("/radio.json");
   if (!file)
@@ -223,7 +224,7 @@ void setup()
 
   // Connect to Wi-Fi
   connectToWiFi();
-  readRadioJson();
+  readRadioSources();
 
   // Audio setup
   audio.setPinout(I2S_BCLK, I2S_LRCK, I2S_DOUT);
