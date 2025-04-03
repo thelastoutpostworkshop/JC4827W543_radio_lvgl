@@ -46,7 +46,7 @@ String radioOptions = "";
 const char *root = "/root"; // Do not change this, it is needed to access files properly on the SD card
 
 // LVGL calls this function to print log information
-void my_print(lv_log_level_t level, const char *buf)
+void lvgl_my_print(lv_log_level_t level, const char *buf)
 {
   LV_UNUSED(level);
   Serial.println(buf);
@@ -265,7 +265,7 @@ void setup()
 
   // register print function for debugging
 #if LV_USE_LOG != 0
-  lv_log_register_print_cb(my_print);
+  lv_log_register_print_cb(lvgl_my_print);
 #endif
 
   screenWidth = gfx->width();
