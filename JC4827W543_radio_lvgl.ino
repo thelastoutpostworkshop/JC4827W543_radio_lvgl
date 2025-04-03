@@ -183,19 +183,19 @@ void setup()
   Serial.println("Setup done");
 }
 
-
-void radio(const char *radioUrl)
-{
-  Serial.printf("Connection to station %s\n", radioUrl);
-  audio.setVolume(21); // default 0...21
-  audio.connecttohost(radioUrl);
-}
-
 void loop()
 {
   lv_task_handler(); /* let the GUI do its work */
   audio.loop();
   vTaskDelay(1);
+}
+
+
+void playRadioStationStream(const char *radioUrl)
+{
+  Serial.printf("Connection to station %s\n", radioUrl);
+  audio.setVolume(21); // default 0...21
+  audio.connecttohost(radioUrl);
 }
 
 // LVGL calls this function to print log information
@@ -259,7 +259,7 @@ static void lvgl_play_btn_event_cb(lv_event_t *e)
       sel = 0;
     }
     // Launch the radio stream corresponding to the selected URL.
-    radio(radioUrlsArray[sel].c_str());
+    playRadioStationStream(radioUrlsArray[sel].c_str());
   }
 }
 
