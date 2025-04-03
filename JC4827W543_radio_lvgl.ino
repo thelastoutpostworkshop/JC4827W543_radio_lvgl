@@ -89,7 +89,7 @@ void lvgl_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data)
   }
 }
 
-static void btn_event_cb(lv_event_t *e)
+static void lvgl_play_btn_event_cb(lv_event_t *e)
 {
   if (lv_event_get_code(e) == LV_EVENT_CLICKED)
   {
@@ -315,7 +315,7 @@ void setup()
   // Align the button below the roller (with a 10-pixel vertical offset).
   lv_obj_set_size(btn, 120, 50);
   lv_obj_align_to(btn, roller, LV_ALIGN_OUT_BOTTOM_MID, 0, 10);
-  lv_obj_add_event_cb(btn, btn_event_cb, LV_EVENT_ALL, NULL);
+  lv_obj_add_event_cb(btn, lvgl_play_btn_event_cb, LV_EVENT_ALL, NULL);
 
   // Add a label to the button.
   lv_obj_t *btn_label = lv_label_create(btn);
