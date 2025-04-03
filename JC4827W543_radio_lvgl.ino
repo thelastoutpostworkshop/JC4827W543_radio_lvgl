@@ -30,12 +30,12 @@ lv_color_t *disp_draw_buf;
 
 #define jsonRadioSourceMaxSize 4096
 #define MAX_RADIO_SOURCES 20
-String radioUrlsArray[MAX_RADIO_SOURCES];       // Stores the radio station URLs
+String radioUrlsArray[MAX_RADIO_SOURCES];         // Stores the radio station URLs
 String radioNamesArray[MAX_RADIO_SOURCES];        // Stores the radio station names
 String radioDescriptionsArray[MAX_RADIO_SOURCES]; // Stores the radio station descriptions
 int radioSourcesCount = 0;                        // Count of radio sources
-lv_obj_t *rollerWidget = NULL;            // Global pointer to the roller widget
-lv_obj_t *descriptionLabel; // Global pointer for the description label
+lv_obj_t *rollerWidget = NULL;                    // Global pointer to the roller widget
+lv_obj_t *descriptionLabel;                       // Global pointer for the description label
 
 Audio audio; // Audio global variable
 String radioOptions = "";
@@ -96,7 +96,8 @@ static void btn_event_cb(lv_event_t *e)
     Serial.println(sel);
 
     // Validate the index.
-    if (sel < 0 || sel >= radioSourcesCount) {
+    if (sel < 0 || sel >= radioSourcesCount)
+    {
       Serial.println("Invalid selection, using default radio station.");
       sel = 0;
     }
@@ -104,7 +105,6 @@ static void btn_event_cb(lv_event_t *e)
     radio(radioUrlsArray[sel].c_str());
   }
 }
-
 
 static void value_changed_event_cb(lv_event_t *e)
 {
@@ -163,13 +163,13 @@ void readRadioJson()
 
   JsonArray sources = doc["radioSources"].as<JsonArray>();
   radioOptions = "";
-  radioSourcesCount = 0;  // Reset counter
+  radioSourcesCount = 0; // Reset counter
 
   for (JsonObject src : sources)
   {
-    const char* name = src["name"].as<const char*>();
-    const char* url = src["url"].as<const char*>();
-    const char* description = src["description"].as<const char*>();
+    const char *name = src["name"].as<const char *>();
+    const char *url = src["url"].as<const char *>();
+    const char *description = src["description"].as<const char *>();
     if (name && url && description && radioSourcesCount < MAX_RADIO_SOURCES)
     {
       // Build the options string with names (separated by newline)
@@ -207,8 +207,6 @@ void readRadioJson()
     Serial.println(radioDescriptionsArray[i]);
   }
 }
-
-
 
 void setup()
 {
@@ -302,7 +300,6 @@ void setup()
     lv_obj_align(descriptionLabel, LV_ALIGN_TOP_RIGHT, -10, 10);
     lv_label_set_text(descriptionLabel, "Station description will appear here");
 
-
     // Create some widgets to see if everything is working
     lv_obj_t *title_label = lv_label_create(lv_screen_active());
     lv_label_set_text(title_label, "LVGL(V" GFX_STR(LVGL_VERSION_MAJOR) "." GFX_STR(LVGL_VERSION_MINOR) "." GFX_STR(LVGL_VERSION_PATCH) ")");
@@ -322,21 +319,33 @@ void setup()
     lv_obj_t *btn_label = lv_label_create(btn);
     lv_label_set_text(btn_label, "Play");
     lv_obj_center(btn_label);
-    // LV_IMAGE_DECLARE(img_cogwheel_argb);
 
-    // // Arc Widget
-    // lv_obj_t * label = lv_label_create(lv_screen_active());
+    // Create a volume arc widget
+    lv_obj_t *volume_arc = lv_arc_create(lv_scr_act());
+    lv_obj_set_size(volume_arc, 150, 150);
 
-    // lv_obj_t *arc = lv_arc_create(lv_screen_active());
-    // lv_obj_set_size(arc, 150, 150);
-    // lv_arc_set_rotation(arc, 135);
-    // lv_arc_set_bg_angles(arc, 0, 270);
-    // lv_arc_set_value(arc, 10);
-    // lv_obj_center(arc);
-    // lv_obj_add_event_cb(arc, value_changed_event_cb, LV_EVENT_VALUE_CHANGED, label);
+    // Set the arc's rotation and background angles so the gauge has a nice appearance.
+    lv_arc_set_rotation(volume_arc, 135);
+    lv_arc_set_bg_angles(volume_arc, 0, 270);
 
-    // // Manually update the label for the first time
-    // lv_obj_send_event(arc, LV_EVENT_VALUE_CHANGED, NULL);
+    // Set the range of the arc to match the audio volume range (0 to 21).
+    lv_arc_set_range(volume_arc, 0, 21);
+
+    // Set the initial value of the arc using the current volume.
+    lv_arc_set_value(volume_arc, audio.getVolume());
+
+    // Align the arc widget at the bottom right of the screen.
+    lv_obj_align(volume_arc, LV_ALIGN_BOTTOM_RIGHT, -10, -10);
+
+    // Create a label to display the current volume value.
+    lv_obj_t *volume_label = lv_label_create(lv_scr_act());
+    lv_label_set_text_fmt(volume_label, "Volume: %d", audio.getVolume());
+    // Align the label above the volume arc.
+    lv_obj_align_to(volume_label, volume_arc, LV_ALIGN_OUT_TOP_MID, 0, -10);
+
+    // Attach the volume event callback to the arc.
+    // The volume_label is passed as user data so the callback can update it.
+    lv_obj_add_event_cb(volume_arc, volume_event_cb, LV_EVENT_VALUE_CHANGED, volume_label);
   }
 
   Serial.println("Setup done");
@@ -344,22 +353,43 @@ void setup()
 
 static void roller_event_handler(lv_event_t *e)
 {
-    if(lv_event_get_code(e) == LV_EVENT_VALUE_CHANGED)
-    {
-        lv_obj_t *roller = (lv_obj_t *)lv_event_get_target(e);
-        int selectedIndex = lv_roller_get_selected(roller);
-        Serial.print("Selected radio station index: ");
-        Serial.println(selectedIndex);
+  if (lv_event_get_code(e) == LV_EVENT_VALUE_CHANGED)
+  {
+    lv_obj_t *roller = (lv_obj_t *)lv_event_get_target(e);
+    int selectedIndex = lv_roller_get_selected(roller);
+    Serial.print("Selected radio station index: ");
+    Serial.println(selectedIndex);
 
-        if (selectedIndex >= 0 && selectedIndex < radioSourcesCount)
-        {
-            lv_label_set_text(descriptionLabel, radioDescriptionsArray[selectedIndex].c_str());
-        }
-        else
-        {
-            lv_label_set_text(descriptionLabel, "No description available");
-        }
+    if (selectedIndex >= 0 && selectedIndex < radioSourcesCount)
+    {
+      lv_label_set_text(descriptionLabel, radioDescriptionsArray[selectedIndex].c_str());
     }
+    else
+    {
+      lv_label_set_text(descriptionLabel, "No description available");
+    }
+  }
+}
+
+static void volume_event_cb(lv_event_t *e)
+{
+  if (lv_event_get_code(e) == LV_EVENT_VALUE_CHANGED)
+  {
+    // Get the arc widget and its current value.
+    lv_obj_t *arc = lv_event_get_target_obj(e);
+    int vol = lv_arc_get_value(arc);
+
+    // Set the audio volume.
+    audio.setVolume(vol);
+    Serial.printf("Volume set to: %d\n", vol);
+
+    // Retrieve the volume label from the event's user data and update its text.
+    lv_obj_t *vol_label = (lv_obj_t *)lv_event_get_user_data(e);
+    if (vol_label)
+    {
+      lv_label_set_text_fmt(vol_label, "Volume: %d", vol);
+    }
+  }
 }
 
 // Function to create the roller widget and return its pointer.
@@ -381,9 +411,9 @@ lv_obj_t *createRollerWidget()
   return rollerWidget;
 }
 
-
-void radio(const char* radioUrl) {
-  Serial.printf("Connection to station %s\n",radioUrl);
+void radio(const char *radioUrl)
+{
+  Serial.printf("Connection to station %s\n", radioUrl);
   audio.setVolume(21); // default 0...21
   audio.connecttohost(radioUrl);
 }
