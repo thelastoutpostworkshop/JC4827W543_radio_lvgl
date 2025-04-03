@@ -45,6 +45,144 @@ String radioOptions = "";
 
 const char *root = "/root"; // Do not change this, it is needed to access files properly on the SD card
 
+void setup()
+{
+  Serial.begin(115200);
+  Serial.println("Arduino_GFX LVGL_Arduino_v9 example ");
+  String LVGL_Arduino = String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
+  Serial.println(LVGL_Arduino);
+
+  // SD Card initialization
+  pinMode(SD_CS, OUTPUT);
+  digitalWrite(SD_CS, HIGH);
+  SD_MMC.setPins(SD_SCK, SD_MOSI /* CMD */, SD_MISO /* D0 */);
+  if (!SD_MMC.begin(root, true /* mode1bit */, false /* format_if_mount_failed */, SDMMC_FREQ_DEFAULT))
+  {
+    Serial.println("ERROR: SD Card mount failed!");
+    while (true)
+    {
+      /* no need to continue */
+    }
+  }
+
+  // Connect to Wi-Fi
+  connectToWiFi();
+  readRadioSources();
+
+  // Audio setup
+  audio.setPinout(I2S_BCLK, I2S_LRCK, I2S_DOUT);
+  audio.setVolume(0); // default 0...21
+
+  // Init Display
+  if (!gfx->begin())
+  {
+    Serial.println("gfx->begin() failed!");
+    while (true)
+    {
+      /* no need to continue */
+    }
+  }
+  // Set the backlight of the screen to High intensity
+  pinMode(GFX_BL, OUTPUT);
+  digitalWrite(GFX_BL, HIGH);
+  gfx->fillScreen(RGB565_BLACK);
+
+  // Init touch device
+  touchController.begin();
+  touchController.setRotation(ROTATION_INVERTED); // Change as needed
+
+  lv_init();                      // init LVGL
+  lv_tick_set_cb(lvgl_millis_cb); // Set a tick source so that LVGL will know how much time elapsed
+
+  // register print function for debugging
+#if LV_USE_LOG != 0
+  lv_log_register_print_cb(lvgl_print);
+#endif
+
+  screenWidth = gfx->width();
+  screenHeight = gfx->height();
+  bufSize = screenWidth * 40;
+
+  disp_draw_buf = (lv_color_t *)heap_caps_malloc(bufSize * 2, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+  if (!disp_draw_buf)
+  {
+    // remove MALLOC_CAP_INTERNAL flag try again
+    disp_draw_buf = (lv_color_t *)heap_caps_malloc(bufSize * 2, MALLOC_CAP_8BIT);
+  }
+  if (!disp_draw_buf)
+  {
+    Serial.println("LVGL disp_draw_buf allocate failed!");
+    while (true)
+    {
+      /* no need to continue */
+    }
+  }
+
+  disp = lv_display_create(screenWidth, screenHeight);
+  lv_display_set_flush_cb(disp, lvgl_disp_flush);
+  lv_display_set_buffers(disp, disp_draw_buf, NULL, bufSize * 2, LV_DISPLAY_RENDER_MODE_PARTIAL);
+
+  // Create input device (touchpad of the JC4827W543)
+  lv_indev_t *indev = lv_indev_create();
+  lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
+  lv_indev_set_read_cb(indev, lvgl_touchpad_read);
+
+  descriptionLabel = lv_label_create(lv_scr_act());
+  lv_obj_set_width(descriptionLabel, 190);
+  lv_label_set_long_mode(descriptionLabel, LV_LABEL_LONG_WRAP);
+  lv_obj_align(descriptionLabel, LV_ALIGN_TOP_RIGHT, -10, 10);
+  lv_label_set_text(descriptionLabel, "Station description will appear here");
+
+  // Create some widgets to see if everything is working
+  lv_obj_t *title_label = lv_label_create(lv_screen_active());
+  lv_label_set_text(title_label, "LVGL(V" GFX_STR(LVGL_VERSION_MAJOR) "." GFX_STR(LVGL_VERSION_MINOR) "." GFX_STR(LVGL_VERSION_PATCH) ")");
+  lv_obj_align(title_label, LV_ALIGN_BOTTOM_MID, 0, 0);
+
+  // Create the roller and capture its pointer.
+  lv_obj_t *roller = createRollerWidget();
+
+  // Create the button widget.
+  lv_obj_t *btn = lv_button_create(lv_scr_act());
+  // Align the button below the roller (with a 10-pixel vertical offset).
+  lv_obj_set_size(btn, 120, 50);
+  lv_obj_align_to(btn, roller, LV_ALIGN_OUT_BOTTOM_MID, 0, 10);
+  lv_obj_add_event_cb(btn, lvgl_play_btn_event_cb, LV_EVENT_ALL, NULL);
+
+  // Add a label to the button.
+  lv_obj_t *btn_label = lv_label_create(btn);
+  lv_label_set_text(btn_label, "Play");
+  lv_obj_center(btn_label);
+
+  // Create a volume arc widget
+  lv_obj_t *volume_arc = lv_arc_create(lv_scr_act());
+  lv_obj_set_size(volume_arc, 150, 150);
+
+  // Set the arc's rotation and background angles so the gauge has a nice appearance.
+  lv_arc_set_rotation(volume_arc, 135);
+  lv_arc_set_bg_angles(volume_arc, 0, 270);
+
+  // Set the range of the arc to match the audio volume range (0 to 21).
+  lv_arc_set_range(volume_arc, 0, 21);
+
+  // Set the initial value of the arc using the current volume.
+  lv_arc_set_value(volume_arc, audio.getVolume());
+
+  // Align the arc widget at the bottom right of the screen.
+  lv_obj_align(volume_arc, LV_ALIGN_BOTTOM_RIGHT, -30, -10);
+
+  // Create a label to display the current volume value.
+  lv_obj_t *volume_label = lv_label_create(lv_scr_act());
+  lv_label_set_text_fmt(volume_label, "Volume: %d", audio.getVolume());
+  // Align the label above the volume arc.
+  lv_obj_align_to(volume_label, volume_arc, LV_ALIGN_CENTER, 0, 0);
+
+  // Attach the volume event callback to the arc.
+  // The volume_label is passed as user data so the callback can update it.
+  lv_obj_add_event_cb(volume_arc, volume_event_cb, LV_EVENT_VALUE_CHANGED, volume_label);
+
+  Serial.println("Setup done");
+}
+
 // LVGL calls this function to print log information
 void lvgl_print(lv_log_level_t level, const char *buf)
 {
@@ -200,147 +338,6 @@ void readRadioSources()
     Serial.print(", Description = ");
     Serial.println(radioDescriptionsArray[i]);
   }
-}
-
-void setup()
-{
-  Serial.begin(115200);
-  Serial.println("Arduino_GFX LVGL_Arduino_v9 example ");
-  String LVGL_Arduino = String('V') + lv_version_major() + "." + lv_version_minor() + "." + lv_version_patch();
-  Serial.println(LVGL_Arduino);
-
-  // SD Card initialization
-  pinMode(SD_CS, OUTPUT);
-  digitalWrite(SD_CS, HIGH);
-  SD_MMC.setPins(SD_SCK, SD_MOSI /* CMD */, SD_MISO /* D0 */);
-  if (!SD_MMC.begin(root, true /* mode1bit */, false /* format_if_mount_failed */, SDMMC_FREQ_DEFAULT))
-  {
-    Serial.println("ERROR: SD Card mount failed!");
-    while (true)
-    {
-      /* no need to continue */
-    }
-  }
-
-  // Connect to Wi-Fi
-  connectToWiFi();
-  readRadioSources();
-
-  // Audio setup
-  audio.setPinout(I2S_BCLK, I2S_LRCK, I2S_DOUT);
-  audio.setVolume(0); // default 0...21
-
-  // Init Display
-  if (!gfx->begin())
-  {
-    Serial.println("gfx->begin() failed!");
-    while (true)
-    {
-      /* no need to continue */
-    }
-  }
-  // Set the backlight of the screen to High intensity
-  pinMode(GFX_BL, OUTPUT);
-  digitalWrite(GFX_BL, HIGH);
-  gfx->fillScreen(RGB565_BLACK);
-
-  // Init touch device
-  touchController.begin();
-  touchController.setRotation(ROTATION_INVERTED); // Change as needed
-
-  // init LVGL
-  lv_init();
-
-  // Set a tick source so that LVGL will know how much time elapsed
-  lv_tick_set_cb(lvgl_millis_cb);
-
-  // register print function for debugging
-#if LV_USE_LOG != 0
-  lv_log_register_print_cb(lvgl_print);
-#endif
-
-  screenWidth = gfx->width();
-  screenHeight = gfx->height();
-  bufSize = screenWidth * 40;
-
-  disp_draw_buf = (lv_color_t *)heap_caps_malloc(bufSize * 2, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
-  if (!disp_draw_buf)
-  {
-    // remove MALLOC_CAP_INTERNAL flag try again
-    disp_draw_buf = (lv_color_t *)heap_caps_malloc(bufSize * 2, MALLOC_CAP_8BIT);
-  }
-  if (!disp_draw_buf)
-  {
-    Serial.println("LVGL disp_draw_buf allocate failed!");
-    while (true)
-    {
-      /* no need to continue */
-    }
-  }
-
-  disp = lv_display_create(screenWidth, screenHeight);
-  lv_display_set_flush_cb(disp, lvgl_disp_flush);
-  lv_display_set_buffers(disp, disp_draw_buf, NULL, bufSize * 2, LV_DISPLAY_RENDER_MODE_PARTIAL);
-
-  // Create input device (touchpad of the JC4827W543)
-  lv_indev_t *indev = lv_indev_create();
-  lv_indev_set_type(indev, LV_INDEV_TYPE_POINTER);
-  lv_indev_set_read_cb(indev, lvgl_touchpad_read);
-
-  descriptionLabel = lv_label_create(lv_scr_act());
-  lv_obj_set_width(descriptionLabel, 190);
-  lv_label_set_long_mode(descriptionLabel, LV_LABEL_LONG_WRAP);
-  lv_obj_align(descriptionLabel, LV_ALIGN_TOP_RIGHT, -10, 10);
-  lv_label_set_text(descriptionLabel, "Station description will appear here");
-
-  // Create some widgets to see if everything is working
-  lv_obj_t *title_label = lv_label_create(lv_screen_active());
-  lv_label_set_text(title_label, "LVGL(V" GFX_STR(LVGL_VERSION_MAJOR) "." GFX_STR(LVGL_VERSION_MINOR) "." GFX_STR(LVGL_VERSION_PATCH) ")");
-  lv_obj_align(title_label, LV_ALIGN_BOTTOM_MID, 0, 0);
-
-  // Create the roller and capture its pointer.
-  lv_obj_t *roller = createRollerWidget();
-
-  // Create the button widget.
-  lv_obj_t *btn = lv_button_create(lv_scr_act());
-  // Align the button below the roller (with a 10-pixel vertical offset).
-  lv_obj_set_size(btn, 120, 50);
-  lv_obj_align_to(btn, roller, LV_ALIGN_OUT_BOTTOM_MID, 0, 10);
-  lv_obj_add_event_cb(btn, lvgl_play_btn_event_cb, LV_EVENT_ALL, NULL);
-
-  // Add a label to the button.
-  lv_obj_t *btn_label = lv_label_create(btn);
-  lv_label_set_text(btn_label, "Play");
-  lv_obj_center(btn_label);
-
-  // Create a volume arc widget
-  lv_obj_t *volume_arc = lv_arc_create(lv_scr_act());
-  lv_obj_set_size(volume_arc, 150, 150);
-
-  // Set the arc's rotation and background angles so the gauge has a nice appearance.
-  lv_arc_set_rotation(volume_arc, 135);
-  lv_arc_set_bg_angles(volume_arc, 0, 270);
-
-  // Set the range of the arc to match the audio volume range (0 to 21).
-  lv_arc_set_range(volume_arc, 0, 21);
-
-  // Set the initial value of the arc using the current volume.
-  lv_arc_set_value(volume_arc, audio.getVolume());
-
-  // Align the arc widget at the bottom right of the screen.
-  lv_obj_align(volume_arc, LV_ALIGN_BOTTOM_RIGHT, -30, -10);
-
-  // Create a label to display the current volume value.
-  lv_obj_t *volume_label = lv_label_create(lv_scr_act());
-  lv_label_set_text_fmt(volume_label, "Volume: %d", audio.getVolume());
-  // Align the label above the volume arc.
-  lv_obj_align_to(volume_label, volume_arc, LV_ALIGN_CENTER, 0, 0);
-
-  // Attach the volume event callback to the arc.
-  // The volume_label is passed as user data so the callback can update it.
-  lv_obj_add_event_cb(volume_arc, volume_event_cb, LV_EVENT_VALUE_CHANGED, volume_label);
-
-  Serial.println("Setup done");
 }
 
 static void roller_event_handler(lv_event_t *e)
