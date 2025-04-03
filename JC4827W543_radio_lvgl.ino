@@ -311,8 +311,8 @@ void setup()
     // Create the button widget.
     lv_obj_t *btn = lv_button_create(lv_scr_act());
     // Align the button below the roller (with a 10-pixel vertical offset).
-    lv_obj_align_to(btn, roller, LV_ALIGN_OUT_BOTTOM_MID, 0, 10);
     lv_obj_set_size(btn, 120, 50);
+    lv_obj_align_to(btn, roller, LV_ALIGN_OUT_BOTTOM_MID, 0, 10);
     lv_obj_add_event_cb(btn, btn_event_cb, LV_EVENT_ALL, NULL);
 
     // Add a label to the button.
@@ -341,7 +341,7 @@ void setup()
     lv_obj_t *volume_label = lv_label_create(lv_scr_act());
     lv_label_set_text_fmt(volume_label, "Volume: %d", audio.getVolume());
     // Align the label above the volume arc.
-    lv_obj_align_to(volume_label, volume_arc, LV_ALIGN_OUT_TOP_MID, 0, -10);
+    lv_obj_align_to(volume_label, volume_arc, LV_ALIGN_CENTER, 0, 0);
 
     // Attach the volume event callback to the arc.
     // The volume_label is passed as user data so the callback can update it.
