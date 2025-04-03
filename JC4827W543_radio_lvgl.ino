@@ -60,7 +60,7 @@ uint32_t lvgl_millis_cb(void)
 }
 
 // LVGL calls this function when a rendered image needs to copied to the display
-void my_disp_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map)
+void lvgl_disp_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map)
 {
   uint32_t w = lv_area_get_width(area);
   uint32_t h = lv_area_get_height(area);
@@ -288,7 +288,7 @@ void setup()
   }
 
   disp = lv_display_create(screenWidth, screenHeight);
-  lv_display_set_flush_cb(disp, my_disp_flush);
+  lv_display_set_flush_cb(disp, lvgl_disp_flush);
   lv_display_set_buffers(disp, disp_draw_buf, NULL, bufSize * 2, LV_DISPLAY_RENDER_MODE_PARTIAL);
 
   // Create input device (touchpad of the JC4827W543)
