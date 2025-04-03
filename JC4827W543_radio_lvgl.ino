@@ -340,7 +340,8 @@ void readRadioSources()
   }
 }
 
-static void roller_event_handler(lv_event_t *e)
+// Handle change when the user change radio station with the roller widget
+static void lvgl_roller_event_handler(lv_event_t *e)
 {
   if (lv_event_get_code(e) == LV_EVENT_VALUE_CHANGED)
   {
@@ -390,7 +391,7 @@ lv_obj_t *createRollerWidget()
 
   // Align the roller to the top left with a margin.
   lv_obj_align(rollerWidget, LV_ALIGN_TOP_LEFT, 10, 40);
-  lv_obj_add_event_cb(rollerWidget, roller_event_handler, LV_EVENT_ALL, NULL);
+  lv_obj_add_event_cb(rollerWidget, lvgl_roller_event_handler, LV_EVENT_ALL, NULL);
 
   // Create a label above the roller.
   lv_obj_t *label = lv_label_create(lv_scr_act());
