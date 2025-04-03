@@ -190,77 +190,10 @@ void loop()
   vTaskDelay(1);
 }
 
-
 void playRadioStationStream(const char *radioUrl)
 {
   Serial.printf("Connection to station %s\n", radioUrl);
-  audio.setVolume(21); // default 0...21
   audio.connecttohost(radioUrl);
-}
-
-// LVGL calls this function to print log information
-void lvgl_print(lv_log_level_t level, const char *buf)
-{
-  LV_UNUSED(level);
-  Serial.println(buf);
-  Serial.flush();
-}
-
-// LVGL calls this function to retrieve elapsed time
-uint32_t lvgl_millis_cb(void)
-{
-  return millis();
-}
-
-// LVGL calls this function when a rendered image needs to copied to the display
-void lvgl_disp_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map)
-{
-  uint32_t w = lv_area_get_width(area);
-  uint32_t h = lv_area_get_height(area);
-
-  gfx->draw16bitRGBBitmap(area->x1, area->y1, (uint16_t *)px_map, w, h);
-
-  lv_disp_flush_ready(disp);
-}
-
-// LVGL calls this function to read the touchpad
-void lvgl_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data)
-{
-  // Update the touch data from the GT911 touch controller
-  touchController.read();
-
-  // If a touch is detected, update the LVGL data structure with the first point's coordinates.
-  if (touchController.isTouched && touchController.touches > 0)
-  {
-    data->point.x = touchController.points[0].x;
-    data->point.y = touchController.points[0].y;
-    data->state = LV_INDEV_STATE_PRESSED; // Touch is pressed
-  }
-  else
-  {
-    data->state = LV_INDEV_STATE_RELEASED; // No touch detected
-  }
-}
-
-// LVGL calls this function when the play button is pressed
-static void lvgl_play_btn_event_cb(lv_event_t *e)
-{
-  if (lv_event_get_code(e) == LV_EVENT_CLICKED)
-  {
-    // Retrieve the selected index from the roller widget.
-    int sel = lv_roller_get_selected(rollerWidget);
-    Serial.print("Button pressed, selected index: ");
-    Serial.println(sel);
-
-    // Validate the index.
-    if (sel < 0 || sel >= radioSourcesCount)
-    {
-      Serial.println("Invalid selection, using default radio station.");
-      sel = 0;
-    }
-    // Launch the radio stream corresponding to the selected URL.
-    playRadioStationStream(radioUrlsArray[sel].c_str());
-  }
 }
 
 // Connect to Wi-Fi
@@ -352,6 +285,71 @@ void readRadioSources()
     Serial.print(radioUrlsArray[i]);
     Serial.print(", Description = ");
     Serial.println(radioDescriptionsArray[i]);
+  }
+}
+
+// LVGL calls this function to print log information
+void lvgl_print(lv_log_level_t level, const char *buf)
+{
+  LV_UNUSED(level);
+  Serial.println(buf);
+  Serial.flush();
+}
+
+// LVGL calls this function to retrieve elapsed time
+uint32_t lvgl_millis_cb(void)
+{
+  return millis();
+}
+
+// LVGL calls this function when a rendered image needs to copied to the display
+void lvgl_disp_flush(lv_display_t *disp, const lv_area_t *area, uint8_t *px_map)
+{
+  uint32_t w = lv_area_get_width(area);
+  uint32_t h = lv_area_get_height(area);
+
+  gfx->draw16bitRGBBitmap(area->x1, area->y1, (uint16_t *)px_map, w, h);
+
+  lv_disp_flush_ready(disp);
+}
+
+// LVGL calls this function to read the touchpad
+void lvgl_touchpad_read(lv_indev_t *indev, lv_indev_data_t *data)
+{
+  // Update the touch data from the GT911 touch controller
+  touchController.read();
+
+  // If a touch is detected, update the LVGL data structure with the first point's coordinates.
+  if (touchController.isTouched && touchController.touches > 0)
+  {
+    data->point.x = touchController.points[0].x;
+    data->point.y = touchController.points[0].y;
+    data->state = LV_INDEV_STATE_PRESSED; // Touch is pressed
+  }
+  else
+  {
+    data->state = LV_INDEV_STATE_RELEASED; // No touch detected
+  }
+}
+
+// LVGL calls this function when the play button is pressed
+static void lvgl_play_btn_event_cb(lv_event_t *e)
+{
+  if (lv_event_get_code(e) == LV_EVENT_CLICKED)
+  {
+    // Retrieve the selected index from the roller widget.
+    int sel = lv_roller_get_selected(rollerWidget);
+    Serial.print("Button pressed, selected index: ");
+    Serial.println(sel);
+
+    // Validate the index.
+    if (sel < 0 || sel >= radioSourcesCount)
+    {
+      Serial.println("Invalid selection, using default radio station.");
+      sel = 0;
+    }
+    // Launch the radio stream corresponding to the selected URL.
+    playRadioStationStream(radioUrlsArray[sel].c_str());
   }
 }
 
