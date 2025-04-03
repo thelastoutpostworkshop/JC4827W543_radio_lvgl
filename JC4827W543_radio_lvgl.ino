@@ -178,9 +178,24 @@ void setup()
 
   // Attach the volume event callback to the arc.
   // The volume_label is passed as user data so the callback can update it.
-  lv_obj_add_event_cb(volume_arc, volume_event_cb, LV_EVENT_VALUE_CHANGED, volume_label);
+  lv_obj_add_event_cb(volume_arc, lvgl_volume_event_cb, LV_EVENT_VALUE_CHANGED, volume_label);
 
   Serial.println("Setup done");
+}
+
+
+void radio(const char *radioUrl)
+{
+  Serial.printf("Connection to station %s\n", radioUrl);
+  audio.setVolume(21); // default 0...21
+  audio.connecttohost(radioUrl);
+}
+
+void loop()
+{
+  lv_task_handler(); /* let the GUI do its work */
+  audio.loop();
+  vTaskDelay(1);
 }
 
 // LVGL calls this function to print log information
@@ -340,7 +355,7 @@ void readRadioSources()
   }
 }
 
-// Handle change when the user change radio station with the roller widget
+// LVGL calls this function when the user change radio station with the roller widget
 static void lvgl_roller_event_handler(lv_event_t *e)
 {
   if (lv_event_get_code(e) == LV_EVENT_VALUE_CHANGED)
@@ -361,7 +376,8 @@ static void lvgl_roller_event_handler(lv_event_t *e)
   }
 }
 
-static void volume_event_cb(lv_event_t *e)
+// LVGL calls this function when the user change the volume
+static void lvgl_volume_event_cb(lv_event_t *e)
 {
   if (lv_event_get_code(e) == LV_EVENT_VALUE_CHANGED)
   {
@@ -401,16 +417,3 @@ lv_obj_t *createRollerWidget()
   return rollerWidget;
 }
 
-void radio(const char *radioUrl)
-{
-  Serial.printf("Connection to station %s\n", radioUrl);
-  audio.setVolume(21); // default 0...21
-  audio.connecttohost(radioUrl);
-}
-
-void loop()
-{
-  lv_task_handler(); /* let the GUI do its work */
-  audio.loop();
-  vTaskDelay(1);
-}
