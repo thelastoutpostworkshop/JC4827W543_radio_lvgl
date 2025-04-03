@@ -54,7 +54,7 @@ void lvgl_my_print(lv_log_level_t level, const char *buf)
 }
 
 // LVGL calls this function to retrieve elapsed time
-uint32_t millis_cb(void)
+uint32_t lvgl_millis_cb(void)
 {
   return millis();
 }
@@ -261,7 +261,7 @@ void setup()
   lv_init();
 
   // Set a tick source so that LVGL will know how much time elapsed
-  lv_tick_set_cb(millis_cb);
+  lv_tick_set_cb(lvgl_millis_cb);
 
   // register print function for debugging
 #if LV_USE_LOG != 0
