@@ -185,11 +185,12 @@ void setup()
 
 void loop()
 {
-  lv_task_handler(); /* let the GUI do its work */
-  audio.loop();
+  lv_task_handler();  // let the GUI do its work 
+  audio.loop();       // let the Audio do its work
   vTaskDelay(1);
 }
 
+// Play a radio station stream using its URL
 void playRadioStationStream(const char *radioUrl)
 {
   Serial.printf("Connection to station %s\n", radioUrl);
