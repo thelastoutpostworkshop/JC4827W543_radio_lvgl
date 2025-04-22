@@ -9,7 +9,7 @@
 #include "TAMC_GT911.h"      // Install "TAMC_GT911" with the Library Manager (last tested on v1.0.2)
 #include "Audio.h"           // Install "ESP32-audioI2S-master" with the library manager (last tested on v3.0.13)
 #include <ArduinoJson.h>     // Install "ArduinoJson" with the library manager (last tested on v7.3.1)
-#include <SD_MMC.h>          // Included with the Espressif Arduino Core (last tested on v3.2.0)
+#include <SD.h>              // Included with the Espressif Arduino Core (last tested on v3.2.0)
 #include "WiFi.h"            // Included with the Espressif Arduino Core (last tested on v3.2.0)
 #include "secrets.h"         // Rename secrets_rename.h to secrets.h and add your SSID and password for your Wifi network
 #include "Arduino.h"
@@ -45,7 +45,8 @@ lv_obj_t *descriptionLabel;    // Global pointer for the description label
 Audio audio; // Audio global variable
 String radioOptions = "";
 
-const char *root = "/root"; // Do not change this, it is needed to access files properly on the SD card
+static SPIClass spiSD{HSPI};
+const char *sdMountPoint = "/sdcard"; 
 
 void setup()
 {
@@ -55,10 +56,8 @@ void setup()
   Serial.println(LVGL_Arduino);
 
   // SD Card initialization
-  pinMode(SD_CS, OUTPUT);
-  digitalWrite(SD_CS, HIGH);
-  SD_MMC.setPins(SD_SCK, SD_MOSI /* CMD */, SD_MISO /* D0 */);
-  if (!SD_MMC.begin(root, true /* mode1bit */, false /* format_if_mount_failed */, SDMMC_FREQ_DEFAULT))
+  spiSD.begin(SD_SCK, SD_MISO, SD_MOSI, SD_CS);
+  if (!SD.begin(SD_CS, spiSD, 10000000, sdMountPoint))
   {
     Serial.println("ERROR: SD Card mount failed!");
     while (true)
@@ -177,7 +176,7 @@ void connectToWiFi()
 // Read the json radio source from the SD Card
 void readRadioSources()
 {
-  File file = SD_MMC.open("/radio.json");
+  File file = SD.open("/radio.json");
   if (!file)
   {
     Serial.println("Failed to open radio.json");
